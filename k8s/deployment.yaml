@@ -1,0 +1,77 @@
+# --- Namespace ---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ecomapp
+---
+
+# --- Deployment ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecomapp
+  namespace: ecomapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecomapp
+  template:
+    metadata:
+      labels:
+        app: ecomapp
+    spec:
+      containers:
+      - name: ecomapp
+        image: kvatron/ecomapp:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: PORT
+          value: "3000"
+---
+
+# --- Service ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecomapp
+  namespace: ecomapp
+spec:
+  selector:
+    app: ecomapp
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+---
+
+# --- Ingress ---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ecomapp
+  namespace: ecomapp
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: lets-encrypt
+spec:
+  rules:
+  - host: ecomapp.kvatron.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ecomapp
+            port:
+              number: 3000
+  tls:
+  - hosts:
+    - ecomapp.kvatron.com
+    secretName: ecomapp-cert
