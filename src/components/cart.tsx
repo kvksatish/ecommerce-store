@@ -10,27 +10,27 @@
 
 "use client";
 
-import { Cart as CartType, CartItem } from "@/types";
+import { Cart as CartType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { useStore } from "@/store/store";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface CartProps {
   cart: CartType;
   onRemoveItem: (itemId: string) => void;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
-  onApplyDiscount: (code: string) => void;
-  onCheckout: () => void;
+  onApplyDiscount: (code: string) => boolean;
+  onCheckout: () => Promise<void>;
 }
 
 function AvailableDiscountCodes({
   onApply,
 }: {
-  onApply: (code: string) => void;
+  onApply: (code: string) => boolean;
 }) {
   const [availableCodes, setAvailableCodes] = useState<
     Array<{ code: string; percentage: number }>
@@ -66,7 +66,12 @@ function AvailableDiscountCodes({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => onApply(code.code)}
+              onClick={() => {
+                const success = onApply(code.code);
+                if (success) {
+                  // Update local state if needed
+                }
+              }}
             >
               Apply
             </Button>
@@ -77,7 +82,13 @@ function AvailableDiscountCodes({
   );
 }
 
-export function Cart() {
+export function Cart({
+  cart,
+  onRemoveItem,
+  onUpdateQuantity,
+  onApplyDiscount,
+  onCheckout,
+}: CartProps) {
   const store = useStore();
   const router = useRouter();
   const [discountCode, setDiscountCode] = useState("");
@@ -87,59 +98,30 @@ export function Cart() {
   const [discountAmount, setDiscountAmount] = useState(0);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
 
-  const handleCheckout = async () => {
-    if (!store.currentUser) {
-      router.push("/login");
-      return;
+  const handleApplyDiscount = () => {
+    if (discountCode) {
+      const success = onApplyDiscount(discountCode);
+      if (success) {
+        setAppliedDiscount(discountCode);
+        setDiscountAmount(store.cart.total * 0.1); // 10% discount
+        setError(null);
+      } else {
+        setError("Invalid or already used discount code");
+      }
     }
+  };
 
+  const handleCheckout = async () => {
     setIsCheckingOut(true);
     try {
-      if (discountCode) {
-        const success = await handleApplyDiscount(discountCode);
-        if (!success) {
-          setIsCheckingOut(false);
-          return;
-        }
-      }
-      const order = store.createOrder();
-      if (order) {
-        setOrderPlaced(true);
-      }
-    } catch (error) {
-      console.error("Checkout error:", error);
+      await onCheckout();
+      setOrderPlaced(true);
+      router.push("/orders");
+    } catch {
+      setError("Failed to place order. Please try again.");
     } finally {
       setIsCheckingOut(false);
     }
-  };
-
-  const handleApplyDiscount = (code: string) => {
-    if (appliedDiscount) {
-      setError("Only one coupon can be applied per order");
-      return;
-    }
-
-    const discountCode = store.getDiscountCode(code);
-    if (discountCode && !discountCode.isUsed) {
-      setAppliedDiscount(code);
-      const discountAmount = (store.cart.total * discountCode.percentage) / 100;
-      store.cart.discountAmount = discountAmount;
-      store.cart.finalTotal = store.cart.total - discountAmount;
-      setError(null);
-      setDiscountAmount(discountAmount);
-      return true;
-    } else {
-      setError("Invalid or already used discount code");
-      return false;
-    }
-  };
-
-  const handleRemoveDiscount = () => {
-    setAppliedDiscount(null);
-    store.cart.discountAmount = 0;
-    store.cart.finalTotal = store.cart.total;
-    setError(null);
-    setDiscountAmount(0);
   };
 
   if (orderPlaced) {
@@ -169,7 +151,7 @@ export function Cart() {
     );
   }
 
-  if (store.cart.items.length === 0) {
+  if (cart.items.length === 0) {
     return (
       <div className="bg-background-light dark:bg-background-dark p-6 rounded-lg shadow-lg">
         <h2 className="text-2xl font-bold text-text-light dark:text-text-dark mb-4">
@@ -185,14 +167,14 @@ export function Cart() {
     );
   }
 
-  const subtotal = store.cart.total;
-  const total = store.cart.finalTotal;
+  const subtotal = cart.total;
+  const total = cart.total - discountAmount;
 
   return (
     <div className="bg-background-light dark:bg-background-dark p-6 rounded-lg shadow-lg">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-text-light dark:text-text-dark">
-          Shopping Cart ({store.cart.items.length} items)
+          Shopping Cart ({cart.items.length} items)
         </h2>
         <Button variant="outline" onClick={store.clearCart}>
           Clear Cart
@@ -200,22 +182,17 @@ export function Cart() {
       </div>
 
       <div className="space-y-4 mb-6">
-        {store.cart.items.map((item) => (
+        {cart.items.map((item) => (
           <div
             key={item.id}
             className="flex items-center gap-4 p-4 bg-background-light-secondary dark:bg-background-dark-secondary rounded-lg"
           >
-            <img
-              src={item.product.image || "/fallback.jpg"}
-              alt={item.product.name || "Product Image"}
-              style={{
-                width: "10rem",
-                height: "10rem",
-                objectFit: "cover",
-                borderRadius: "0.375rem", // approx rounded-md
-                border: "1px solid #e5e7eb", // light border (you can adjust this)
-              }}
-              // className="w-16 h-16 object-cover rounded border border-border-light dark:border-border-dark"
+            <Image
+              src={item.product.image}
+              alt={item.product.name}
+              width={100}
+              height={100}
+              className="w-16 h-16 object-cover rounded border border-border-light dark:border-border-dark"
             />
             <div className="flex-1">
               <h3 className="font-medium">{item.product.name}</h3>
@@ -227,9 +204,8 @@ export function Cart() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  store.updateCartItemQuantity(item.id, item.quantity - 1)
-                }
+                onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+                disabled={item.quantity <= 1}
               >
                 -
               </Button>
@@ -237,20 +213,18 @@ export function Cart() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  store.updateCartItemQuantity(item.id, item.quantity + 1)
-                }
+                onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
               >
                 +
               </Button>
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => store.removeFromCart(item.id)}
-              >
-                Remove
-              </Button>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onRemoveItem(item.id)}
+            >
+              Remove
+            </Button>
           </div>
         ))}
       </div>
@@ -261,29 +235,15 @@ export function Cart() {
           <div>
             <h3 className="text-lg font-semibold mb-4">Discount Code</h3>
             <div className="space-y-2">
-              <div className="flex gap-4">
+              <div className="flex items-center gap-2">
                 <Input
+                  type="text"
                   placeholder="Enter discount code"
                   value={discountCode}
                   onChange={(e) => setDiscountCode(e.target.value)}
-                  disabled={appliedDiscount !== null}
+                  className="flex-1"
                 />
-                {appliedDiscount ? (
-                  <Button variant="danger" onClick={handleRemoveDiscount}>
-                    Remove
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      handleApplyDiscount(discountCode);
-                      setDiscountCode("");
-                    }}
-                    disabled={!discountCode.trim()}
-                  >
-                    Apply
-                  </Button>
-                )}
+                <Button onClick={handleApplyDiscount}>Apply</Button>
               </div>
               {error && (
                 <p className="text-sm text-red-500 dark:text-red-400">
@@ -291,14 +251,15 @@ export function Cart() {
                 </p>
               )}
               {appliedDiscount && (
-                <p className="text-sm text-green-600 dark:text-green-400">
-                  Discount code applied successfully!
+                <p className="text-sm text-green-500 dark:text-green-400">
+                  Discount applied: {appliedDiscount} (-$
+                  {discountAmount.toFixed(2)})
                 </p>
               )}
             </div>
 
             {!appliedDiscount && (
-              <AvailableDiscountCodes onApply={handleApplyDiscount} />
+              <AvailableDiscountCodes onApply={onApplyDiscount} />
             )}
           </div>
 
@@ -310,17 +271,11 @@ export function Cart() {
                 <span>Subtotal</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
-              {discountCode && (
-                <>
-                  <div className="flex justify-between">
-                    <span>Discount Code</span>
-                    <span>{discountCode}</span>
-                  </div>
-                  <div className="flex justify-between text-green-600 dark:text-green-400">
-                    <span>Discount Amount</span>
-                    <span>-${discountAmount.toFixed(2)}</span>
-                  </div>
-                </>
+              {appliedDiscount && (
+                <div className="flex justify-between">
+                  <span>Discount</span>
+                  <span>-${discountAmount.toFixed(2)}</span>
+                </div>
               )}
               <div className="border-t border-border-light dark:border-border-dark pt-2 mt-2">
                 <div className="flex justify-between font-bold">

@@ -9,15 +9,13 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "@/store/store";
 import { Header } from "@/components/header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { LineChart, BarChart } from "@/components/charts";
-import { useRouter } from "next/navigation";
 
 export default function AdminPage() {
   const {

@@ -1,46 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
-import { useStore } from "@/store/store";
-import { APIResponse, Order } from "@/types";
+import { NextResponse } from "next/server";
+import { store } from "@/store/store";
 
 // POST /api/checkout - Process checkout and create order
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const cart = useStore.getState().cart;
-
-    if (cart.items.length === 0) {
+    const order = store.getState().createOrder();
+    if (!order) {
       return NextResponse.json(
-        {
-          success: false,
-          error: "Cart is empty",
-        },
+        { error: "Failed to create order" },
         { status: 400 }
       );
     }
-
-    const order = useStore.getState().createOrder();
-
-    if (!order) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Failed to create order",
-        },
-        { status: 500 }
-      );
-    }
-
-    const response: APIResponse<Order> = {
-      success: true,
-      data: order,
-    };
-
-    return NextResponse.json(response);
-  } catch (error) {
+    return NextResponse.json({ success: true, order });
+  } catch (err) {
+    console.error("Error creating order:", err);
     return NextResponse.json(
-      {
-        success: false,
-        error: "Checkout failed",
-      },
+      { error: "Failed to create order" },
       { status: 500 }
     );
   }

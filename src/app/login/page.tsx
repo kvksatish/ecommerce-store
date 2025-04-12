@@ -19,24 +19,19 @@ export default function LoginPage() {
   const store = useStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [notification, setNotification] = useState("");
+  const [notificationType, setNotificationType] = useState("");
 
-  const handleLogin = async () => {
-    setIsLoading(true);
-    setError("");
-
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const user = store.login(email, password);
-      if (user) {
+      const success = await store.login(email, password);
+      if (success) {
         router.push("/");
-      } else {
-        setError("Invalid email or password");
       }
-    } catch (error) {
-      setError("An error occurred during login");
-    } finally {
-      setIsLoading(false);
+    } catch {
+      setNotification("Invalid email or password");
+      setNotificationType("error");
     }
   };
 
@@ -55,9 +50,15 @@ export default function LoginPage() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              {error && (
-                <div className="p-4 text-sm rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400">
-                  {error}
+              {notification && (
+                <div
+                  className={`p-4 text-sm rounded-lg ${
+                    notificationType === "error"
+                      ? "bg-red-50 dark:bg-red-900/20 text-red-500 dark:text-red-400"
+                      : "bg-green-50 dark:bg-green-900/20 text-green-500 dark:text-green-400"
+                  }`}
+                >
+                  {notification}
                 </div>
               )}
 
@@ -72,7 +73,6 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="h-12"
-                    disabled={isLoading}
                   />
                 </div>
 
@@ -86,7 +86,6 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="h-12"
-                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -94,10 +93,9 @@ export default function LoginPage() {
               <div className="space-y-4">
                 <Button
                   className="w-full h-12 text-lg font-semibold mt-4"
-                  onClick={handleLogin}
-                  disabled={isLoading || !email || !password}
+                  onClick={handleSubmit}
                 >
-                  {isLoading ? "Signing in..." : "Sign In"}
+                  Sign In
                 </Button>
 
                 <div className="text-center">

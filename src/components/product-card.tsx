@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useStore } from "@/store/store";
 import Link from "next/link";
+import Image from "next/image";
 
 // Props interface for the ProductCard component
 interface ProductCardProps {
@@ -26,16 +27,15 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const isAdminUser = currentUser?.role === "admin";
 
   return (
-    <div className="product-card group bg-background-light dark:bg-background-dark rounded-lg overflow-hidden border border-border-light dark:border-border-dark hover:shadow-lg transition-all duration-300 h-full flex flex-col">
-      {/* Product Image Section */}
-      <div className="relative aspect-[4/3] overflow-hidden">
-        <img
+    <div className="group relative">
+      <div className="aspect-h-1 aspect-w-1 w-full overflow-hidden rounded-md bg-gray-200 lg:aspect-none group-hover:opacity-75 lg:h-80">
+        <Image
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          width={500}
+          height={500}
+          className="h-full w-full object-cover object-center lg:h-full lg:w-full"
         />
-        {/* Image overlay that appears on hover */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       </div>
 
       {/* Product Details Section */}

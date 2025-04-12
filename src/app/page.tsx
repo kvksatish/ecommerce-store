@@ -14,9 +14,11 @@ export default function Home() {
     "info" | "success" | "error"
   >("info");
   const [isPageLoaded, setIsPageLoaded] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsPageLoaded(true);
+    setIsMounted(true);
   }, []);
 
   const handleAddToCart = (productId: string, quantity: number) => {
@@ -39,25 +41,7 @@ export default function Home() {
   };
 
   const handleApplyDiscount = (code: string) => {
-    const isApplied = store.applyDiscountCode(code);
-
-    if (!isApplied) {
-      setNotification("Invalid or already used discount code");
-      setNotificationType("error");
-
-      // Clear notification after 3 seconds
-      setTimeout(() => {
-        setNotification(null);
-      }, 3000);
-    } else {
-      setNotification("Discount code applied successfully!");
-      setNotificationType("success");
-
-      // Clear notification after 3 seconds
-      setTimeout(() => {
-        setNotification(null);
-      }, 3000);
-    }
+    return store.applyDiscountCode(code);
   };
 
   const handleCheckout = async () => {
@@ -118,7 +102,7 @@ export default function Home() {
       setTimeout(() => {
         setNotification(null);
       }, 5000);
-    } catch (error) {
+    } catch {
       setNotification("An error occurred during checkout");
       setNotificationType("error");
 
@@ -147,6 +131,10 @@ export default function Home() {
 
     return `${baseClasses} opacity-100 translate-y-0 ${typeClasses[notificationType]}`;
   };
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <div

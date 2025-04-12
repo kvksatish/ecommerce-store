@@ -30,7 +30,7 @@ interface StoreState {
 
   // Discount codes
   discountCodes: DiscountCode[];
-  generateDiscountCode: (userId?: string) => DiscountCode | null;
+  generateDiscountCode: () => string | null;
   getDiscountCode: (code: string) => DiscountCode | undefined;
   markDiscountCodeAsUsed: (code: string) => void;
   getUserDiscountCodes: (userId: string) => DiscountCode[];
@@ -50,8 +50,8 @@ interface StoreState {
 }
 
 // Configuration
-const ORDER_DISCOUNT_FREQUENCY = 3; // Generate discount every 3rd order
-const DISCOUNT_PERCENTAGE = 10; // 10% discount
+const ORDER_DISCOUNT_FREQUENCY = 3;
+const DISCOUNT_PERCENTAGE = 10;
 
 // Sample products
 const sampleProducts: Product[] = [
@@ -115,7 +115,7 @@ const sampleUsers: User[] = [
   },
 ];
 
-export const useStore = create<StoreState>()(
+export const store = create<StoreState>()(
   persist(
     (set, get) => ({
       // Authentication
@@ -380,10 +380,10 @@ export const useStore = create<StoreState>()(
 
           if (discountInterval > 0 && userOrderCount % discountInterval === 0) {
             // Generate new discount code for this customer
-            const newDiscountCode = get().generateDiscountCode(currentUser.id);
+            const newDiscountCode = get().generateDiscountCode();
 
             console.log(
-              `Generated discount code for user ${currentUser.name}: ${newDiscountCode?.code}`
+              `Generated discount code for user ${currentUser.name}: ${newDiscountCode}`
             );
           }
         }
@@ -405,29 +405,29 @@ export const useStore = create<StoreState>()(
       // Discount codes
       discountCodes: [],
 
-      generateDiscountCode: (userId?: string) => {
-        // Generate a random alphanumeric code
-        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        let code = "";
-        for (let i = 0; i < 8; i++) {
-          code += characters.charAt(
-            Math.floor(Math.random() * characters.length)
-          );
+      generateDiscountCode: () => {
+        const state = get();
+        const orderCount = state.orders.length;
+
+        if (orderCount % ORDER_DISCOUNT_FREQUENCY === 0) {
+          const code = `DISCOUNT${Math.random()
+            .toString(36)
+            .substring(2, 8)
+            .toUpperCase()}`;
+          set((state) => ({
+            discountCodes: [
+              ...state.discountCodes,
+              {
+                code,
+                percentage: DISCOUNT_PERCENTAGE,
+                isUsed: false,
+                isDisabled: false,
+              },
+            ],
+          }));
+          return code;
         }
-
-        // Create discount code with 10% off
-        const discountCode: DiscountCode = {
-          code,
-          percentage: 10,
-          isUsed: false,
-          userId,
-        };
-
-        set((state) => ({
-          discountCodes: [...state.discountCodes, discountCode],
-        }));
-
-        return discountCode;
+        return null;
       },
 
       getDiscountCode: (code: string) => {
@@ -512,12 +512,8 @@ export const useStore = create<StoreState>()(
     }),
     {
       name: "ecommerce-store",
-      partialize: (state) => ({
-        currentUser: state.currentUser,
-        cart: state.cart,
-        orders: state.orders,
-        discountCodes: state.discountCodes,
-      }),
     }
   )
 );
+
+export const useStore = store;

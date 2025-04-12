@@ -37,13 +37,8 @@ export async function POST(request: NextRequest) {
     };
 
     return NextResponse.json(response);
-  } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to apply discount code",
-      },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.error("Error applying discount code:", err);
+    return NextResponse.json({ error: "Failed to apply discount code" }, { status: 500 });
   }
 }

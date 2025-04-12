@@ -1,33 +1,18 @@
 import { NextResponse } from "next/server";
-import { useStore } from "@/store/store";
-import { APIResponse } from "@/types";
+import { store } from "@/store/store";
 
 // GET /api/admin/stats - Get store statistics
 export async function GET() {
   try {
-    const store = useStore.getState();
-
     const stats = {
-      totalItems: store.getTotalItemsPurchased(),
-      totalAmount: store.getTotalPurchaseAmount(),
-      discountCodes: store.discountCodes,
-      totalDiscountAmount: store.getTotalDiscountAmount(),
-      orderCount: store.getOrderCount(),
+      totalSales: store.getState().getTotalPurchaseAmount(),
+      totalItems: store.getState().getTotalItemsPurchased(),
+      totalDiscounts: store.getState().getTotalDiscountAmount(),
+      totalOrders: store.getState().getOrderCount(),
     };
-
-    const response: APIResponse<typeof stats> = {
-      success: true,
-      data: stats,
-    };
-
-    return NextResponse.json(response);
-  } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Failed to get store statistics",
-      },
-      { status: 500 }
-    );
+    return NextResponse.json(stats);
+  } catch (err) {
+    console.error("Error getting stats:", err);
+    return NextResponse.json({ error: "Failed to get stats" }, { status: 500 });
   }
 }
