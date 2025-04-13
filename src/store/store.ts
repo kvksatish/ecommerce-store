@@ -61,7 +61,7 @@ const sampleProducts: Product[] = [
     price: 699.99,
     description: "Latest model smartphone with high-resolution camera",
     image:
-      "https://images.unsplash.com/photo-1598327105666-5b89351aff97?q=80&w=2942&auto=format&fit=crop&ixlib=rb-4.0.3",
+      "https://cdn.pixabay.com/photo/2017/01/22/12/07/imac-1999636_1280.png",
   },
   {
     id: "2",
@@ -69,7 +69,7 @@ const sampleProducts: Product[] = [
     price: 1299.99,
     description: "Powerful laptop for work and gaming",
     image:
-      "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3",
+      "https://cdn.pixabay.com/photo/2014/05/02/21/50/home-office-336378_1280.jpg",
   },
   {
     id: "3",
@@ -77,7 +77,7 @@ const sampleProducts: Product[] = [
     price: 199.99,
     description: "Noise-cancelling wireless headphones",
     image:
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3",
+      "https://cdn.pixabay.com/photo/2016/12/19/08/39/mobile-phone-1917737_1280.jpg",
   },
   {
     id: "4",
@@ -85,7 +85,7 @@ const sampleProducts: Product[] = [
     price: 249.99,
     description: "Fitness tracking smartwatch with heart rate monitor",
     image:
-      "https://images.unsplash.com/photo-1617043786394-f977fa12eddf?q=80&w=3270&auto=format&fit=crop&ixlib=rb-4.0.3",
+      "https://cdn.pixabay.com/photo/2017/01/22/12/07/imac-1999636_1280.png",
   },
   {
     id: "5",
@@ -93,7 +93,7 @@ const sampleProducts: Product[] = [
     price: 499.99,
     description: "10-inch tablet with high-resolution display",
     image:
-      "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?q=80&w=3271&auto=format&fit=crop&ixlib=rb-4.0.3",
+      "https://cdn.pixabay.com/photo/2014/05/02/21/50/home-office-336378_1280.jpg",
   },
 ];
 
