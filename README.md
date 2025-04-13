@@ -1,77 +1,175 @@
-# E-Commerce Store
+# 📦 EcomApp – Full Stack + DevOps Overview
 
-A simple e-commerce store application that allows users to browse products, add items to cart, and checkout orders. Every nth order gets a coupon code for 10% discount.
+This README presents **side-by-side views** of both **Development** and **Deployment** aspects of the EcomApp project.
 
-## Features
+---
 
-- Browse products
-- Add products to cart
-- Apply discount codes
-- Checkout and place orders
-- Automatic discount code generation (every 3rd order)
-- Admin dashboard with stats and discount code management
+## 🧩 Tech Stack Overview
 
-## Tech Stack
+| Development                                 | Deployment                                     |
+|---------------------------------------------|-------------------------------------------------|
+| `Next.js 15.3.0` (App Router)                | Kubernetes Cluster on VPS (Contabo)             |
+| `TypeScript` + `Zustand` for state mgmt     | Docker + Multi-stage builds                     |
+| `Tailwind CSS` for UI                       | Traefik Ingress with TLS from Let's Encrypt     |
+| `Turbopack` for build optimization          | Persistent storage via Longhorn                 |
+| REST/Client-side logic                      | DNS management via GoDaddy                      |
+| Server-side actions in Next.js              | Namespaces, Services, and Ingress configured    |
 
-- Next.js 14 with App Router
-- TypeScript
-- Tailwind CSS for styling
-- Zustand for state management
-- In-memory store for data persistence
+---
 
-## Getting Started
+## 🛠️ Development Workflow
 
-### Prerequisites
+### Local Setup
+```bash
+# Clone the repository
+$ git clone https://github.com/yourusername/ecommerce-store.git
+$ cd ecommerce-store
 
-- Node.js 18.17 or later
+# Install dependencies
+$ npm install
 
-### Installation
+# Run in development mode
+$ npm run dev
 
-1. Clone the repository
-   ```bash
-   git clone https://github.com/yourusername/ecommerce-store.git
-   cd ecommerce-store
-   ```
+# Open: http://localhost:3000
+```
 
-2. Install dependencies
-   ```bash
-   npm install
-   ```
+### File Structure
+```bash
+src/
+├── app/                # Pages, layouts, routing
+├── components/         # Reusable UI components
+├── store/              # Zustand-based state store
+└── types/              # Global TS types
+```
 
-3. Run the development server
-   ```bash
-   npm run dev
-   ```
+### Environment
+```env
+# .env.local
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+---
 
-## API Endpoints
+## 🚀 Kubernetes Deployment (Production)
 
-### Cart API
+### Docker Image
+```Dockerfile
+# Multi-stage build
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
 
-- `GET /api/cart` - Get current cart
-- `POST /api/cart` - Add item to cart
-  - Request body: `{ productId: string, quantity: number }`
-- `DELETE /api/cart` - Remove item from cart
-  - Request body: `{ itemId: string }`
+FROM node:18-alpine AS runner
+WORKDIR /app
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+ENV NODE_ENV=production
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
 
-### Discount API
+### Kubernetes Manifests (apply with `kubectl apply -f ecomapp-deployment.yaml`)
+```yaml
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ecomapp
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecomapp
+  namespace: ecomapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ecomapp
+  template:
+    metadata:
+      labels:
+        app: ecomapp
+    spec:
+      containers:
+      - name: ecomapp
+        image: satishkvk/ecomapp:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: PORT
+          value: "3000"
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecomapp
+  namespace: ecomapp
+spec:
+  selector:
+    app: ecomapp
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+---
+# Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ecomapp
+  namespace: ecomapp
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: lets-encrypt
+spec:
+  rules:
+  - host: ecomapp.kvatron.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ecomapp
+            port:
+              number: 3000
+  tls:
+  - hosts:
+    - ecomapp.kvatron.com
+    secretName: ecomapp-cert
+```
 
-- `POST /api/cart/discount` - Apply discount code to cart
-  - Request body: `{ code: string }`
+---
 
-### Checkout API
+## 🌐 DNS Configuration
+- Domain: `ecomapp.kvatron.com`
+- DNS Provider: **GoDaddy**
+- Type: `A` Record
+- Value: Public IP of Kubernetes Node (e.g. `62.171.136.239`)
 
-- `POST /api/checkout` - Process checkout and create order
+---
 
-### Admin APIs
+## ✅ Summary
+| Development                                   | Deployment                                       |
+|-----------------------------------------------|--------------------------------------------------|
+| Full Next.js frontend app                     | Traefik TLS-secured routing via Ingress          |
+| Zustand-based session & cart management       | Docker image pushed to Docker Hub                |
+| Tailwind UI + Role-based login                | Namespace-isolated K8s resources                 |
+| Git-based workflow                            | DNS records manually updated on GoDaddy          |
+| SSR + Static Export                           | HTTPS via Let's Encrypt auto-cert generation     |
 
-- `GET /api/admin/stats` - Get store statistics
-- `GET /api/admin/discount` - Get all discount codes
-- `POST /api/admin/discount` - Generate a new discount code
+---
 
-## Discount Code Rules
-
-- Discount codes are generated automatically after every 3rd order
-- Each discount code can only be used once
-- Discount codes provide 10% off the entire order
+> 💡 This setup demonstrates full-stack capability with **DevOps deployment workflow**, showcasing both frontend and infrastructure readiness.
