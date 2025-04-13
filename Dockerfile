@@ -1,19 +1,17 @@
 # Build stage
 FROM node:18-alpine AS builder
 
-# Set working directory
+# Set the working directory
 WORKDIR /app
 
-# Copy package files
+# Copy package files and install dependencies
 COPY package*.json ./
-
-# Install dependencies
 RUN npm ci
 
-# Copy source code
+# Copy the rest of the application source code
 COPY . .
 
-# Build the application
+# Build the Next.js application
 RUN npm run build
 
 # Production stage
@@ -21,18 +19,19 @@ FROM node:18-alpine AS runner
 
 WORKDIR /app
 
-# Copy necessary files from builder
-COPY --from=builder /app/next.config.js ./
+# Copy the built application and necessary files from the builder stage
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
 
-# Set environment variables
+# Set environment variables for production
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Expose the port
+# Expose the application port
 EXPOSE 3000
 
-# Start the application
-CMD ["node", "server.js"] 
+# Command to start the application
+# Dockerfile
+CMD ["node", "server.js"]

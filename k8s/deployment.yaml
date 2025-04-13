@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: ecomapp
-        image: kvatron/ecomapp:latest
+image: satishkvk/ecomapp:latest
         ports:
         - containerPort: 3000
         env:
